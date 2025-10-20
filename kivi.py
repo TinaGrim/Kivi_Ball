@@ -3,22 +3,23 @@ import numpy as np
 import math
 
 
-screen = pygame.display.set_mode((800, 600))
+
 class Ball():
     def __init__(self, position, speed, degree):
         self.WIDTH, self.HEIGHT = 800, 600
-        self.ball = pygame.image.load("download.png").convert_alpha()
-        self.ball = pygame.transform.scale(self.ball, (100, 100))
+        self.ball_original = pygame.image.load("download.png").convert_alpha()
+        self.ball_original = pygame.transform.scale(self.ball_original, (100, 100))
+        self.ball = self.ball_original.copy()
         self.ball_rect = self.ball.get_rect(center=position)
         self.vector = pygame.math.Vector2
         self.position = position
-        self.velocity = self.vector(0,0)
         self.acceleration = self.vector(0,0)
         self.friction = 0.01
         self.speed = speed
         rad = math.radians(degree)
         self.gravity = self.vector(0, 0.2)
-        self.velocity = self.vector(np.cos(rad) * self.speed, np.sin(rad) * self.speed)
+        self.velocity =  self.vector(np.cos(rad) * self.speed, np.sin(rad) * self.speed)
+        self.rot = 0
         
 
     
@@ -30,6 +31,7 @@ class Ball():
         
         self.position += self.velocity
         self.ball_rect.center = self.position
+        self.rot += 1
         self.ball_collision()
 
 
@@ -56,6 +58,11 @@ class Ball():
                 
     def draw(self, screen):
         screen.blit(self.ball, self.ball_rect)
+        
+    def rotate(self):
+        self.ball = pygame.transform.rotate(self.ball_original, self.rot)
+        self.ball_rect = self.ball.get_rect(center=self.ball_rect.center)
+
     def is_slow(self):
         return self.velocity.length() > 0.1
 
@@ -70,7 +77,9 @@ class kavi():
         self.DARK_RED = (139, 0, 0)
         self.GREEN = (0, 255, 0)
         self.obstacle_timer = pygame.USEREVENT + 1
+        self.rotate_timer = pygame.USEREVENT + 2
         pygame.time.set_timer(self.obstacle_timer, 100)
+        pygame.time.set_timer(self.rotate_timer, 50)
         self.balls = []
         self.WIDTH, self.HEIGHT = 800, 600
         self.rad = 0
@@ -85,7 +94,6 @@ class kavi():
         self.no_ball_rect = self.no_ball.get_rect(center=((self.WIDTH//2, self.HEIGHT//5)))
         
         while True:
-
             screen.blit(background, (0, 0))
             screen.blit(self.soccer, self.soccer_rect)
             
@@ -114,8 +122,14 @@ class kavi():
                 if len(self.balls) <= 30 and self.new_gen:
                     self.balls.append(Ball((self.WIDTH//2,self.HEIGHT//2), 30, self.rad))
                     self.rad += 10
+                    
                     if len(self.balls) == 30:
                         self.new_gen = False
+            if event.type == self.rotate_timer:
+                for ball in self.balls:
+                    ball.rot += 2
+                    ball.rotate()
+                        
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.new_gen = True
@@ -124,6 +138,7 @@ class kavi():
 
 if __name__ == "__main__":
     pygame.init()
+    screen = pygame.display.set_mode((800, 600))
     kavi()
     pygame.quit()
     exit()
